@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: serverless app cicd pipeline sam app
+
+Resources:
+  CICDPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore: 
+        Location: codepipeline-us-east-1-106937909482
+        Type: S3
+      Name: !Sub ${AWS::StackName}-pipeline
+      RoleArn: arn:aws:iam::****:role/service-role/AWSCodePipelineServiceRole-us-east-1-qe-cicd-pipeline
+      Stages: 
+        - Name: Source 
+          Actions: 
+            - Name: Source
+              ActionTypeId: 
+                Category: Source 
+                Owner: AWS 
+                Version: "1"
+                Provider: CodeStarSourceConnection
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Configuration: 
+                ConnectionArn: 
+                  arn:aws:codestar-connections:us-east-2:****:connection/****
+                FullRepositoryId: 
+                  app/serverless-app
+                BranchName:
+                  master
+              RunOrder: 1
+
+        - Name: Update 
+          Actions: 
+            - Name: manual-approval
+              ActionTypeId: 
+                Category: Approval 
+                Owner: AWS 
+                Version: "1"
+                Provider: Manual
+              Configuration:
+                NotificationArn: arn:aws:sns:us-east-1:****:app-prod-sns
+              RunOrder: 1
+
+            - Name: deploy-update-stack
+              InputArtifacts: 
+                -
+                  Name: SourceArtifact 
+              ActionTypeId: 
+                Category: Build 
+                Owner: AWS 
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+                EnvironmentVariables: '[{"name":"BUILD_STAGE","value":"UPDATE","type":"PLAINTEXT"}]'
+              RunOrder: 2
+
+        - Name: Test 
+          Actions: 
+            - Name: deploy-test-stack
+              InputArtifacts: 
+                - Name: SourceArtifact 
+              ActionTypeId: 
+                Category: Build 
+                Owner: AWS 
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+                EnvironmentVariables: '[{"name":"BUILD_STAGE","value":"TEST","type":"PLAINTEXT"}]'
+              RunOrder: 1
+
+            - Name: run-test-statemachine
+              InputArtifacts:
+                - Name: SourceArtifact 
+              ActionTypeId:
+                Category: Invoke 
+                Owner: AWS 
+                Version: "1"
+                Provider: StepFunctions
+              Configuration:
+                StateMachineArn: arn:aws:states:us-east-1:****:stateMachine:app-testing-pipeline-stateMachine
+                Input: '{"ExecutionName": "","batchjobCommand":["node","index.js"]}'
+              RunOrder: 2
+
+        - Name: Production 
+          Actions: 
+            - Name: manual-approval
+              ActionTypeId: 
+                Category: Approval 
+                Owner: AWS 
+                Version: "1"
+                Provider: Manual
+              Configuration:
+                NotificationArn: arn:aws:sns:us-east-1:****:app-prod-sns
+              RunOrder: 1 
+
+            - Name: deploy-prod-stack
+              InputArtifacts:
+                - Name: SourceArtifact
+              ActionTypeId: 
+                Category: Build 
+                Owner: AWS 
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+                EnvironmentVariables: '[{"name":"BUILD_STAGE","value":"PROD","type":"PLAINTEXT"}]'
+              RunOrder: 2
+
+              
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      BadgeEnabled: False
+      Environment: 
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:5.0
+        ImagePullCredentialsType: CODEBUILD
+        PrivilegedMode: False
+        Type: LINUX_CONTAINER
+      LogsConfig: 
+        CloudWatchLogs: 
+          Status: ENABLED
+        S3Logs: 
+          Status: DISABLED
+      Name: !Sub ${AWS::StackName}-codebuild-project
+      ServiceRole: arn:aws:iam::****:role/service-role/codebuild-qe-cicd-build-service-role
+      Source:
+        Type: CODEPIPELINE
