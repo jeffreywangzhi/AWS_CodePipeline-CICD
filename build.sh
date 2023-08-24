@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Building with BUILD_STAGE = $BUILD_STAGE"
 case "$BUILD_STAGE" in
 UPDATE)
