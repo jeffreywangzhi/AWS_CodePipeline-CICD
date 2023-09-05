@@ -80,7 +80,7 @@ Make sure the **buildSpec.yml** and **samconfig.toml** files have been correctly
 ```
 #### buildspec.yml
 The **buildspec.yml** file specifies respective building commands in different building enviornment to build the CICD pipeline.
-```
+```bash
 version: 0.2
 phases:
   build:
