@@ -57,15 +57,15 @@ Successfully created/updated stack
 
 **[Update Stage]**
 1. Whenever the Update stage receives a new code push from the Source stage, it sends a notification via SNS and waits for manual approval to proceed.
-2. After receiving approval from the user, the Update stage begins building and deploying the source code to an update enviornment.
+2. After receiving approval from the user, the Update stage begins building and deploying the source code to an update environment.
 
 **[Test Stage]**
-1. Following the successful deployment in the Update stage, the Test stage builds and deploys a test enviornment with the source code.
-2. Next, the Test stage invokes the test statemachine for testing the updated enviornment built from the source code.
+1. Following the successful deployment in the Update stage, the Test stage builds and deploys a test environment with the source code.
+2. Next, the Test stage invokes the test statemachine for testing the updated environment built from the source code.
 
 **[Production Stage]**
-1. After successfully proceeded all of the above tasks and tests, the Production stage sends a notification via SNS and waits for manual approval to deploy.
-2. After receiving approval from the user, the Production stage begins building and deploying the source code to the Production enviornment.
+1. After successfully proceeding with all of the above tasks and tests, the Production stage sends a notification via SNS and waits for manual approval to deploy.
+2. After receiving approval from the user, the Production stage begins building and deploying the source code to the Production environment.
 
 ---
 ## Usage <a name = "elaboration"></a> ##
@@ -79,7 +79,7 @@ Make sure the **buildSpec.yml** and **samconfig.toml** files have been correctly
   template.yml
 ```
 #### buildspec.yml
-The **buildspec.yml** file specifies respective building commands in different building enviornment to build the CICD pipeline.
+The **buildspec.yml** file specifies respective building commands in different building environments to build the CICD pipeline.
 ```bash
 version: 0.2
 phases:
@@ -107,7 +107,7 @@ phases:
       esac
 ```
 #### samconfig-[update/test/prod].toml (IN TARGET REPO)
-Ensure the ```stack_name``` in **samconfig-update.toml**, **samconfig-test.toml**, **samconfig-prod.toml** are updated based on different building enviornments. 
+Ensure the ```stack_name``` in **samconfig-update.toml**, **samconfig-test.toml**, **samconfig-prod.toml** are updated based on different building environments. 
 ```toml
 version = 0.1
 [default]
